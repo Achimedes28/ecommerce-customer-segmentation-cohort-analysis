@@ -11,7 +11,7 @@ from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.enum.shapes import MSO_SHAPE
 
-BASE_DIR = "/Users/novaldiramadhanwaluyo/Desktop/Certificate and portfolio/Portfolio/Portfolio Data Analyst/E-Commerce Customer Segmentation & Cohort Analysis"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PRES_DIR = os.path.join(BASE_DIR, "presentations")
 REPORT_DIR = os.path.join(BASE_DIR, "reports")
 VIZ_DIR = os.path.join(BASE_DIR, "visualizations")

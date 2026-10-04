@@ -1,0 +1,90 @@
+// =============================================================================
+// DAX measures - E-Commerce Customer Segmentation & Cohort Retention
+// Create a blank table named _Measures and add each measure below to it.
+// Display folders are shown in [brackets] in the comment above each group.
+// =============================================================================
+
+// ---- [Customer KPIs] --------------------------------------------------------
+
+Total Revenue =
+SUM ( dim_customer[monetary_value] )
+// Format: Currency, £ English (United Kingdom), 0 decimals
+
+Customers =
+COUNTROWS ( dim_customer )
+// Format: Whole number, thousands separator
+
+Orders =
+SUM ( dim_customer[frequency] )
+// Format: Whole number, thousands separator
+
+Revenue per Customer =
+DIVIDE ( [Total Revenue], [Customers] )
+// Format: Currency £, 0 decimals
+
+Avg Order Value =
+DIVIDE ( [Total Revenue], [Orders] )
+// Format: Currency £, 0 decimals
+
+Avg Orders per Customer =
+DIVIDE ( [Orders], [Customers] )
+// Format: Decimal, 1 decimal
+
+Avg Recency (Days) =
+AVERAGE ( dim_customer[recency_days] )
+// Format: Decimal, 0 decimals
+
+// ---- [Segment Mix] ----------------------------------------------------------
+
+Revenue Share % =
+DIVIDE (
+    [Total Revenue],
+    CALCULATE ( [Total Revenue], REMOVEFILTERS ( dim_segment ), REMOVEFILTERS ( dim_customer[segment] ) )
+)
+// Format: Percentage, 1 decimal
+
+Customer Share % =
+DIVIDE (
+    [Customers],
+    CALCULATE ( [Customers], REMOVEFILTERS ( dim_segment ), REMOVEFILTERS ( dim_customer[segment] ) )
+)
+// Format: Percentage, 1 decimal
+
+Core Revenue Share % =
+CALCULATE ( [Revenue Share %], dim_segment[segment_group] = "Core" )
+// Champions + Loyal Customers. Format: Percentage, 1 decimal
+
+Core Customer Share % =
+CALCULATE ( [Customer Share %], dim_segment[segment_group] = "Core" )
+// Format: Percentage, 1 decimal
+
+// ---- [Cohort Retention] -----------------------------------------------------
+
+Active Customers =
+SUM ( fact_cohort[active_customers] )
+// Format: Whole number
+
+New Customers =
+CALCULATE ( [Active Customers], fact_cohort[month_index] = 0 )
+// Format: Whole number
+
+Returning Customers =
+CALCULATE ( [Active Customers], fact_cohort[month_index] > 0 )
+// Format: Whole number
+
+Retention Rate =
+DIVIDE ( SUM ( fact_cohort[active_customers] ), SUM ( fact_cohort[cohort_size] ) )
+// Customer-weighted across every cohort that reached the month index in context.
+// Format: Percentage, 1 decimal
+
+Month 1 Retention =
+CALCULATE ( [Retention Rate], fact_cohort[month_index] = 1 )
+
+Month 3 Retention =
+CALCULATE ( [Retention Rate], fact_cohort[month_index] = 3 )
+
+Month 6 Retention =
+CALCULATE ( [Retention Rate], fact_cohort[month_index] = 6 )
+
+Month 12 Retention =
+CALCULATE ( [Retention Rate], fact_cohort[month_index] = 12 )
