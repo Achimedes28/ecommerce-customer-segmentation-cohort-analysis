@@ -15,7 +15,9 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
 
-BASE_DIR = "/Users/novaldiramadhanwaluyo/Desktop/Certificate and portfolio/Portfolio/Portfolio Data Analyst/E-Commerce Customer Segmentation & Cohort Analysis"
+from report_metrics import load_metrics, money, money_m, pct
+
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REPORT_DIR = os.path.join(BASE_DIR, "reports")
 VIZ_DIR = os.path.join(BASE_DIR, "visualizations")
 METRICS_DIR = os.path.join(BASE_DIR, "metrics")
@@ -45,7 +47,7 @@ class NumberedCanvas(canvas.Canvas):
         
         # Header (pages > 1)
         if self._pageNumber > 1:
-            self.drawString(36, 805, "E-Commerce Customer Segmentation & Cohort Analysis | Executive Analytics Report")
+            self.drawString(36, 805, "E-Commerce Customer Segmentation & Cohort Retention | Executive Report")
             self.setStrokeColor(colors.HexColor("#E2E8F0"))
             self.setLineWidth(0.5)
             self.line(36, 798, 559, 798)
@@ -55,7 +57,7 @@ class NumberedCanvas(canvas.Canvas):
         self.setLineWidth(0.5)
         self.line(36, 42, 559, 42)
         
-        self.drawString(36, 30, "Confidential — Prepared by Novaldi Ramadhan Waluyo (Data Analyst)")
+        self.drawString(36, 30, "Prepared by Novaldi Ramadhan Waluyo (Data Analyst)")
         page_str = f"Page {self._pageNumber} of {page_count}"
         self.drawRightString(559, 30, page_str)
         self.restoreState()
@@ -171,36 +173,45 @@ def generate_pdf_report():
         textColor=colors.white
     )
 
+    m = load_metrics()
+    seg = m["seg"]
+    cm1 = m["cohort_m1"]
+
+    def bullet(text):
+        story.append(Paragraph(f"• {text}", bullet_style))
+
     story = []
 
     # =========================================================================
     # HEADER / TITLE SECTION
     # =========================================================================
-    story.append(Paragraph("E-Commerce Customer Segmentation & Cohort Retention Optimization", title_style))
-    story.append(Paragraph("Executive Briefing & Strategic Retention Playbook | Addressing +25% CAC Surge", subtitle_style))
-    story.append(Paragraph("Author: <b>Novaldi Ramadhan Waluyo</b> (Data Analyst) &nbsp;|&nbsp; Target Audience: <b>CMO, CRM Lead, Product Growth Manager</b>", meta_style))
+    story.append(Paragraph("E-Commerce Customer Segmentation & Cohort Retention", title_style))
+    story.append(Paragraph("Executive briefing and retention playbook", subtitle_style))
+    story.append(Paragraph("Author: <b>Novaldi Ramadhan Waluyo</b> (Data Analyst) &nbsp;|&nbsp; Audience: <b>CMO, CRM Lead, Product & Growth Manager</b>", meta_style))
     story.append(HRFlowable(width="100%", thickness=1.5, color=C_BLUE, spaceAfter=10))
 
     # =========================================================================
-    # SECTION 1: EXECUTIVE SUMMARY & STRATEGIC CONTEXT
+    # SECTION 1: EXECUTIVE SUMMARY
     # =========================================================================
-    story.append(Paragraph("1. Executive Summary & Strategic Business Context", h1_style))
+    story.append(Paragraph("1. Executive Summary", h1_style))
     story.append(Paragraph(
-        "Over the past 12 months, the e-commerce retail enterprise recorded a <b>25% surge in Customer Acquisition Costs (CAC)</b>. In response, marketing teams historically relied on aggressive blanket promotions (mass discounting). While this maintained top-of-funnel transaction volume, it attracted short-lived discount seekers, diluted gross profit margins, and triggered massive drop-offs following initial orders.",
+        "The project brief describes a <b>25% rise in Customer Acquisition Cost (CAC)</b> over 12 months while marketing still relies on "
+        "untargeted mass promotions. The question is where customers drop off after their first order and which customers are worth investing in.",
         body_style
     ))
     story.append(Paragraph(
-        "This data analytics initiative audited <b>1,067,371 raw transaction records</b> spanning a two-year operational window (December 2009 to December 2011). Following rigorous data cleansing, <b>805,549 verified transactions</b> representing <b>5,878 unique registered buyers</b> and <b>£17.74M in gross sales</b> were analyzed using Monthly Cohort Retention tracking and RFM (Recency, Frequency, Monetary) behavioral modeling.",
+        f"The analysis covers <b>{m['raw_rows']:,} raw transaction lines</b> from {m['period']}. After cleaning, "
+        f"<b>{m['clean_rows']:,} lines</b> from <b>{m['customers']:,} registered customers</b> in {m['countries']} countries "
+        f"(<b>{money_m(m['revenue'])}</b> revenue, {m['orders']:,} orders) were analysed with monthly cohort retention and RFM segmentation.",
         body_style
     ))
     story.append(Spacer(1, 4))
 
-    # KPI Scorecard Table
     kpi_table_data = [
-        [Paragraph("<b>Analyzed Period</b>", table_cell_bold), Paragraph("<b>Cleaned Transactions</b>", table_cell_bold), Paragraph("<b>Unique Customers</b>", table_cell_bold), Paragraph("<b>Total Gross Revenue</b>", table_cell_bold)],
-        [Paragraph("Dec 2009 – Dec 2011 (24 Mo)", table_cell_style), Paragraph("<b>805,549 lines</b> (Filtered from 1.06M)", table_cell_style), Paragraph("<b>5,878 registered buyers</b>", table_cell_style), Paragraph("<b><font color='#2563EB'>£17,743,429.18</font></b>", table_cell_style)],
-        [Paragraph("<b>Month-1 Retention Rate</b>", table_cell_bold), Paragraph("<b>Month-1 Churn Drop</b>", table_cell_bold), Paragraph("<b>Champions & Loyalists Share</b>", table_cell_bold), Paragraph("<b>At-Risk Revenue Exposure</b>", table_cell_bold)],
-        [Paragraph("<b><font color='#D97706'>25.8% (Avg)</font></b>", table_cell_style), Paragraph("<b><font color='#E11D48'>-74.2% drop-off</font></b>", table_cell_style), Paragraph("<b>62.4% Revenue</b> (28.1% Users)", table_cell_style), Paragraph("<b>£2.68M (15.1% Total)</b>", table_cell_style)]
+        [Paragraph("<b>Period</b>", table_cell_bold), Paragraph("<b>Cleaned lines</b>", table_cell_bold), Paragraph("<b>Customers</b>", table_cell_bold), Paragraph("<b>Revenue</b>", table_cell_bold)],
+        [Paragraph(m["period"], table_cell_style), Paragraph(f"{m['clean_rows']:,} (from {m['raw_rows'] / 1e6:.2f}M)", table_cell_style), Paragraph(f"{m['customers']:,} in {m['countries']} countries", table_cell_style), Paragraph(f"<b><font color='#2563EB'>{money(m['revenue'], 2)}</font></b>", table_cell_style)],
+        [Paragraph("<b>Month-1 retention</b>", table_cell_bold), Paragraph("<b>Not back in month 1</b>", table_cell_bold), Paragraph("<b>Champions + Loyal</b>", table_cell_bold), Paragraph("<b>At Risk revenue</b>", table_cell_bold)],
+        [Paragraph(f"<b>{pct(m['m1'])}</b> (customer-weighted)", table_cell_style), Paragraph(f"<b>{pct(m['m1_churn'])}</b> of new customers", table_cell_style), Paragraph(f"<b>{pct(m['core_pct_revenue'])}</b> of revenue from {pct(m['core_pct_customers'])} of customers", table_cell_style), Paragraph(f"<b>{money_m(seg.loc['At Risk', 'revenue'])}</b> ({pct(seg.loc['At Risk', 'pct_revenue'])} of total)", table_cell_style)]
     ]
     t_kpi = Table(kpi_table_data, colWidths=[130, 130, 130, 133])
     t_kpi.setStyle(TableStyle([
@@ -216,63 +227,63 @@ def generate_pdf_report():
     story.append(Spacer(1, 10))
 
     # =========================================================================
-    # SECTION 2: DATA CLEANSING & PIPELINE METHODOLOGY
+    # SECTION 2: DATA PREPARATION
     # =========================================================================
-    story.append(Paragraph("2. Data Cleansing & Pipeline Methodology", h1_style))
-    story.append(Paragraph(
-        "To ensure analytical integrity and prevent distorted customer lifetime value metrics, the raw data was processed through a standardized Python & SQL pipeline:",
-        body_style
-    ))
-    story.append(Paragraph("• <b>Cancellation Handling:</b> Invoices prefixed with 'C' and negative quantities representing returns/cancellations (~21,000 rows) were isolated.", bullet_style))
-    story.append(Paragraph("• <b>Guest Checkout Separation:</b> Records lacking a persistent Customer ID (~240,000 rows) were separated into aggregate baseline tables, retaining strictly registered accounts for longitudinal cohort and RFM tracking.", bullet_style))
-    story.append(Paragraph("• <b>Price & Quantity Audits:</b> Erroneous entries (unit prices <= £0.00 or damaged stock adjustments) were removed.", bullet_style))
-    story.append(Paragraph("• <b>Temporal & Metric Engineering:</b> Engineered fields include Line Total Sales (Quantity * UnitPrice), Transaction Month, Customer First Purchase Month (Cohort), and Julian Day Recency offsets.", bullet_style))
+    story.append(Paragraph("2. Data Preparation", h1_style))
+    story.append(Paragraph("The raw Online Retail II workbook (two yearly sheets) was processed in Python (<font face='Courier'>src/etl_pipeline.py</font>) and loaded into SQLite:", body_style))
+    bullet("<b>Cancellations and returns:</b> invoices starting with 'C' and lines with quantity &lt;= 0 were removed.")
+    bullet("<b>Guest checkouts:</b> lines without a Customer ID were excluded, because cohort and RFM analysis need a persistent customer.")
+    bullet("<b>Invalid prices:</b> lines with a unit price &lt;= £0 were removed.")
+    bullet("<b>Engineered fields:</b> line revenue (quantity × unit price), invoice month, cohort month (first purchase) and recency in days from 10 Dec 2011.")
     story.append(Spacer(1, 6))
 
     # =========================================================================
-    # SECTION 3: COHORT RETENTION DEEP DIVE
+    # SECTION 3: COHORT RETENTION
     # =========================================================================
-    story.append(Paragraph("3. Monthly Cohort Retention Analysis (The Month-1 Cliff)", h1_style))
-    story.append(Paragraph(
-        "Cohort analysis groups customers based on their initial transaction month and tracks their repeat transaction activity across subsequent monthly intervals (Cohort Index 0 to 12+).",
-        body_style
-    ))
-    
+    cohort_block = [
+        Paragraph("3. Monthly Cohort Retention", h1_style),
+        Paragraph("Customers are grouped by the month of their first purchase and tracked by how many buy again in each following month (month 0 to 24).", body_style),
+    ]
     img_cohort = os.path.join(VIZ_DIR, "01_cohort_retention_heatmap.png")
     if os.path.exists(img_cohort):
-        story.append(Image(img_cohort, width=7.2*inch, height=3.6*inch))
-        story.append(Spacer(1, 6))
+        cohort_block += [Image(img_cohort, width=7.2*inch, height=3.6*inch), Spacer(1, 6)]
+    story.append(KeepTogether(cohort_block))
 
-    story.append(Paragraph("Key Diagnostic Findings from Cohort Heatmap:", h2_style))
-    story.append(Paragraph("1. <b>The Month-1 Cliff (74.2% First-Order Churn):</b> Across all cohorts, customer retention drops drastically from 100% in Month 0 to an average of <b>25.8% in Month 1</b>. Nearly 3 out of 4 new customers never return after their first purchase.", bullet_style))
-    story.append(Paragraph("2. <b>Resilient Long-Term Core (20–25% Stabilization):</b> Customers who remain active past Month 3 display strong loyalty, maintaining a steady <b>20% to 25% repeat purchase rate</b> through Month 12 and beyond.", bullet_style))
-    story.append(Paragraph("3. <b>Holiday Acquisition Degradation:</b> Customers acquired during Q4 promotional peaks (November 2010) show slightly lower Month-1 retention (~22.1%), confirming that mass holiday discounting attracts non-retaining transactional bargain seekers.", bullet_style))
-    story.append(Paragraph("4. <b>Action Window:</b> The primary lifecycle vulnerability occurs in <b>Days 7 to 21 post-purchase</b>. Interventions must engage buyers immediately after order delivery.", bullet_style))
+    holiday = ", ".join(f"{d:%b %Y} {pct(cm1[d])}" for d in pd.to_datetime(["2010-11-01", "2010-12-01"]))
+    story.append(Paragraph("Findings", h2_style))
+    bullet(f"<b>The month-1 cliff:</b> only <b>{pct(m['m1'])}</b> of new customers buy again in the month after their first order, so {pct(m['m1_churn'])} do not come back that month.")
+    bullet(f"<b>Flat after the cliff:</b> retention stays between <b>{pct(m['retention_min_m1_m12'])} and {pct(m['retention_max_m1_m12'])}</b> from month 1 to month 12. The second purchase is the main lever.")
+    bullet(f"<b>Holiday cohorts retain worst:</b> month-1 retention for customers acquired in the Q4 peak was {holiday}, against the {pct(m['m1'])} average, consistent with promotions attracting one-off buyers.")
+    bullet("<b>Action window:</b> follow-up has to happen within the first 30 days, before the next month starts.")
     story.append(Spacer(1, 10))
 
     story.append(PageBreak())
 
     # =========================================================================
-    # SECTION 4: RFM BEHAVIORAL SEGMENTATION
+    # SECTION 4: RFM SEGMENTATION
     # =========================================================================
-    story.append(Paragraph("4. RFM Customer Segmentation & Monetary Concentration", h1_style))
+    story.append(Paragraph("4. RFM Segmentation", h1_style))
     story.append(Paragraph(
-        "Customers were scored on a 1-to-5 quintile scale across three behavioral dimensions: <b>Recency (R)</b> (days since last purchase), <b>Frequency (F)</b> (count of distinct invoice orders), and <b>Monetary Value (M)</b> (total cumulative spend). Customers were categorized into six actionable operational segments:",
+        "Each customer is scored 1 to 5 (quintiles) on <b>Recency</b> (days since last order), <b>Frequency</b> (distinct orders) and "
+        "<b>Monetary value</b> (total spend), then assigned to one of seven segments.",
         body_style
     ))
     story.append(Spacer(1, 4))
 
-    # RFM Data Table
-    rfm_table_data = [
-        [Paragraph("<b>Customer Segment</b>", table_header_style), Paragraph("<b>Count</b>", table_header_style), Paragraph("<b>% Base</b>", table_header_style), Paragraph("<b>Total Revenue (£)</b>", table_header_style), Paragraph("<b>% Rev</b>", table_header_style), Paragraph("<b>Avg Recency</b>", table_header_style), Paragraph("<b>Avg Orders</b>", table_header_style), Paragraph("<b>Avg Spend (£)</b>", table_header_style)],
-        [Paragraph("<b>Champions</b>", table_cell_bold), Paragraph("868", table_cell_style), Paragraph("14.8%", table_cell_style), Paragraph("£7,286,211.20", table_cell_style), Paragraph("<b>41.1%</b>", table_cell_bold), Paragraph("12.4 days", table_cell_style), Paragraph("19.8x", table_cell_style), Paragraph("£8,394.25", table_cell_style)],
-        [Paragraph("<b>Loyal Customers</b>", table_cell_bold), Paragraph("782", table_cell_style), Paragraph("13.3%", table_cell_style), Paragraph("£3,781,402.15", table_cell_style), Paragraph("<b>21.3%</b>", table_cell_bold), Paragraph("35.6 days", table_cell_style), Paragraph("7.2x", table_cell_style), Paragraph("£4,835.55", table_cell_style)],
-        [Paragraph("<b>At Risk</b>", table_cell_bold), Paragraph("945", table_cell_style), Paragraph("16.1%", table_cell_style), Paragraph("£2,684,105.40", table_cell_style), Paragraph("<b>15.1%</b>", table_cell_bold), Paragraph("215.8 days", table_cell_style), Paragraph("4.8x", table_cell_style), Paragraph("£2,840.32", table_cell_style)],
-        [Paragraph("<b>Potential Loyalists</b>", table_cell_bold), Paragraph("741", table_cell_style), Paragraph("12.6%", table_cell_style), Paragraph("£1,452,380.90", table_cell_style), Paragraph("8.2%", table_cell_style), Paragraph("48.2 days", table_cell_style), Paragraph("2.9x", table_cell_style), Paragraph("£1,959.95", table_cell_style)],
-        [Paragraph("<b>New / Recent</b>", table_cell_bold), Paragraph("982", table_cell_style), Paragraph("16.7%", table_cell_style), Paragraph("£1,120,490.15", table_cell_style), Paragraph("6.3%", table_cell_style), Paragraph("24.1 days", table_cell_style), Paragraph("1.4x", table_cell_style), Paragraph("£1,141.03", table_cell_style)],
-        [Paragraph("<b>Hibernating / Lost</b>", table_cell_bold), Paragraph("1,560", table_cell_style), Paragraph("26.5%", table_cell_style), Paragraph("£1,418,839.38", table_cell_style), Paragraph("8.0%", table_cell_style), Paragraph("442.7 days", table_cell_style), Paragraph("1.3x", table_cell_style), Paragraph("£909.51", table_cell_style)]
-    ]
-    t_rfm = Table(rfm_table_data, colWidths=[92, 38, 42, 95, 45, 65, 55, 75])
+    header = ["Segment", "Customers", "% base", "Revenue", "% rev", "Avg recency", "Avg orders", "Avg spend"]
+    rfm_table_data = [[Paragraph(f"<b>{h}</b>", table_header_style) for h in header]]
+    for name, r in seg.iterrows():
+        rfm_table_data.append([
+            Paragraph(f"<b>{name}</b>", table_cell_bold),
+            Paragraph(f"{int(r.customers):,}", table_cell_style),
+            Paragraph(pct(r.pct_customers), table_cell_style),
+            Paragraph(money(r.revenue), table_cell_style),
+            Paragraph(f"<b>{pct(r.pct_revenue)}</b>", table_cell_bold),
+            Paragraph(f"{r.recency:.0f} days", table_cell_style),
+            Paragraph(f"{r.orders:.1f}", table_cell_style),
+            Paragraph(money(r.spend), table_cell_style),
+        ])
+    t_rfm = Table(rfm_table_data, colWidths=[100, 50, 42, 78, 42, 62, 52, 62])
     t_rfm.setStyle(TableStyle([
         ('BACKGROUND', (0,0), (-1,0), C_NAVY),
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
@@ -283,76 +294,81 @@ def generate_pdf_report():
         ('BOTTOMPADDING', (0,0), (-1,-1), 4.5),
         ('LEFTPADDING', (0,0), (-1,-1), 4),
         ('RIGHTPADDING', (0,0), (-1,-1), 4),
-        ('ALIGN', (1,1), (-1,-1), 'RIGHT'),
     ]))
     story.append(t_rfm)
     story.append(Spacer(1, 8))
 
     img_rfm = os.path.join(VIZ_DIR, "02_rfm_revenue_vs_customers.png")
     if os.path.exists(img_rfm):
-        story.append(Image(img_rfm, width=7.2*inch, height=3.4*inch))
+        story.append(Image(img_rfm, width=7.2*inch, height=3.7*inch))
         story.append(Spacer(1, 6))
 
-    story.append(Paragraph("Key Segment Inferences:", h2_style))
-    story.append(Paragraph("• <b>Extreme Pareto Revenue Concentration:</b> The top two tiers (Champions and Loyal Customers) represent only <b>28.1% of all customers</b> but generate <b>62.4% of total enterprise revenue (£11.06M)</b>.", bullet_style))
-    story.append(Paragraph("• <b>High-Value At-Risk Threat:</b> The 'At Risk' segment holds 945 accounts that previously spent an average of £2,840.32 across 4.8 orders, but have been dormant for >200 days. This represents <b>£2.68M in lapsed revenue</b> that requires immediate reactivation.", bullet_style))
-    story.append(Paragraph("• <b>High-Volume Dormancy:</b> 26.5% of the database is 'Hibernating' (recency >440 days). Cold paid remarketing to this tier is economically wasteful; low-cost automated email drip campaigns should be used instead.", bullet_style))
+    champ, risk = seg.loc["Champions"], seg.loc["At Risk"]
+    story.append(Paragraph("Findings", h2_style))
+    bullet(f"<b>Revenue is concentrated:</b> Champions are {pct(champ.pct_customers)} of customers but {pct(champ.pct_revenue)} of revenue. "
+           f"With Loyal Customers, the top two segments ({m['core_customers']:,} customers, {pct(m['core_pct_customers'])}) bring in {pct(m['core_pct_revenue'])} ({money_m(m['core_revenue'])}).")
+    bullet(f"<b>High-value customers at risk:</b> {int(risk.customers):,} At Risk customers averaged {risk.orders:.1f} orders and {money(risk.spend)} spend, "
+           f"but last ordered about {risk.recency:.0f} days ago on average. Together they represent <b>{money_m(risk.revenue)}</b> of historical revenue worth winning back.")
+    bullet(f"<b>Large dormant tail:</b> Hibernating and Lost customers are {pct(m['dormant_pct_customers'])} of the base but only {pct(m['dormant_pct_revenue'])} of revenue. "
+           "Paid remarketing to them is unlikely to pay back; low-cost email is enough.")
     story.append(Spacer(1, 10))
 
     # =========================================================================
-    # SECTION 5: MONTHLY REVENUE & ORDER DYNAMICS
+    # SECTION 5: MONTHLY REVENUE
     # =========================================================================
-    story.append(Paragraph("5. Monthly Revenue Dynamics & Seasonality", h1_style))
+    revenue_block = [Paragraph("5. Monthly Revenue and Seasonality", h1_style)]
     img_growth = os.path.join(VIZ_DIR, "03_monthly_revenue_growth.png")
     if os.path.exists(img_growth):
-        story.append(Image(img_growth, width=7.2*inch, height=3.2*inch))
-        story.append(Spacer(1, 6))
+        revenue_block += [Image(img_growth, width=7.2*inch, height=3.7*inch), Spacer(1, 6)]
+    story.append(KeepTogether(revenue_block))
 
-    story.append(Paragraph("• <b>Pronounced Q4 Seasonality:</b> Revenue experiences massive holiday surges in October–November (peaking above £1.5M/month). Marketing must deploy automated post-holiday nurture sequences to convert November one-time buyers into Q1 repeat purchasers.", bullet_style))
+    bullet("<b>Strong Q4 seasonality:</b> revenue climbs from September and peaks in November in both years at around £1.2M a month, roughly twice the Q1 level.")
+    bullet("<b>December 2011 is partial:</b> the data ends on 9 December 2011, so the final drop is not a real decline.")
+    bullet("<b>Implication:</b> Q4 has the most active customers but the holiday cohorts retain worst, so a January re-engagement flow for November and December first-time buyers matters most.")
 
     story.append(PageBreak())
 
     # =========================================================================
-    # SECTION 6: STAKEHOLDER STRATEGIC PLAYBOOK
+    # SECTION 6: PLAYBOOK
     # =========================================================================
-    story.append(Paragraph("6. Actionable Strategic Playbook for Key Stakeholders", h1_style))
-    story.append(Paragraph(
-        "To remediate the 25% CAC surge and capture untapped customer lifetime value, specific tactical initiatives are assigned to core leadership roles:",
-        body_style
-    ))
+    story.append(Paragraph("6. Retention Playbook", h1_style))
+    story.append(Paragraph("Recommended actions by owner. Each should be run as a controlled test (holdout group) before full rollout.", body_style))
     story.append(Spacer(1, 4))
 
-    story.append(Paragraph("A. Head of Marketing & CMO (Budget & Margin Optimization)", h2_style))
-    story.append(Paragraph("1. <b>20% Budget Shift from Acquisition to Retention:</b> Reallocate £200k–£300k from generic broad-match paid search/social ads into automated lifecycle email/SMS infrastructure and customer loyalty programs.", bullet_style))
-    story.append(Paragraph("2. <b>Abolish Blanket Public Discounting:</b> Stop sitewide coupon codes that erode product value perception. Restrict financial discounting strictly to high-value At-Risk win-back workflows.", bullet_style))
-    story.append(Paragraph("3. <b>Tiered Promo Strategy:</b> Reward Champions with non-monetary VIP perks (early product launches, dedicated concierge, exclusive packaging) rather than price discounts.", bullet_style))
-    story.append(Paragraph("4. <b>Projected Impact:</b> Expected 15–20% reduction in blended CAC and +8% expansion in net operating margin.", bullet_style))
+    story.append(Paragraph("A. Head of Marketing / CMO: budget and margin", h2_style))
+    story.append(Paragraph("1. <b>Shift budget from acquisition to retention:</b> move part of the broad paid-media budget into lifecycle email/SMS for New and At Risk customers.", bullet_style))
+    story.append(Paragraph("2. <b>Stop blanket discounts:</b> keep discounts for targeted At Risk win-back offers only.", bullet_style))
+    story.append(Paragraph("3. <b>Reward Champions without margin:</b> early access, exclusive products and service perks instead of price cuts.", bullet_style))
     story.append(Spacer(1, 6))
 
-    story.append(Paragraph("B. CRM & Retention Lead (Lifecycle Trigger Automation)", h2_style))
-    story.append(Paragraph("1. <b>Automated Day-14 Post-Purchase Onboarding Trigger:</b> Deploy personalized product recommendations based on initial category purchase within 14 days of delivery to bridge the Month-1 cliff.", bullet_style))
-    story.append(Paragraph("2. <b>60-Day Inactivity Early Warning Trigger:</b> Automatically trigger re-engagement sequences when a previously active buyer hits 60 days without an order (intervening before they cross into the 200+ day At-Risk churn state).", bullet_style))
-    story.append(Paragraph("3. <b>Multi-Channel Routing:</b> Use high-touch WhatsApp/SMS notifications for high-monetary At-Risk customers; use weekly curated newsletters for Loyalists and Potential Loyalists.", bullet_style))
-    story.append(Paragraph("4. <b>Dynamic RFM Scoring Pipeline:</b> Automatically recalculate RFM scores weekly to catch segment migrations dynamically.", bullet_style))
+    story.append(Paragraph("B. CRM & Retention Lead: lifecycle triggers", h2_style))
+    story.append(Paragraph("1. <b>14-day post-purchase flow:</b> personalised recommendations based on the first order's category, to close the month-1 gap.", bullet_style))
+    story.append(Paragraph(f"2. <b>60-day inactivity trigger:</b> start re-engagement when a customer passes 60 days without an order, well before the At Risk level (~{risk.recency:.0f} days on average).", bullet_style))
+    story.append(Paragraph("3. <b>Channel by value:</b> SMS/WhatsApp for high-value At Risk customers, a regular newsletter for Loyal and Potential Loyalists.", bullet_style))
+    story.append(Paragraph("4. <b>Refresh RFM scores weekly</b> so customers moving between segments are caught early.", bullet_style))
     story.append(Spacer(1, 6))
 
-    story.append(Paragraph("C. Product & Growth Manager (User Experience & Telemetry)", h2_style))
-    story.append(Paragraph("1. <b>Tiered Loyalty Program:</b> Launch a gamified 4-tier loyalty program (Bronze, Silver, Gold, Platinum) with clear milestones on 3rd and 5th orders to incentivize habit formation.", bullet_style))
-    story.append(Paragraph("2. <b>1-Click Frictionless Reordering:</b> Implement quick-reorder buttons on past purchase history pages for consumable, high-frequency SKUs.", bullet_style))
-    story.append(Paragraph("3. <b>Live Tableau Telemetry Hub:</b> Maintain real-time tracking of weekly cohort churn and RFM distribution via the automated Tableau ODBC connection.", bullet_style))
+    story.append(Paragraph("C. Product & Growth Manager: habit and tracking", h2_style))
+    story.append(Paragraph("1. <b>Loyalty tiers</b> with milestones at the 3rd and 5th order to move Potential Loyalists up.", bullet_style))
+    story.append(Paragraph("2. <b>One-click reorder</b> from order history for frequently repurchased items.", bullet_style))
+    story.append(Paragraph("3. <b>Track retention in the Power BI dashboard</b> (Overview, Cohort Retention, RFM Segments) to monitor month-1 retention and segment shifts.", bullet_style))
     story.append(Spacer(1, 10))
 
     # =========================================================================
-    # SECTION 7: TECHNICAL DATA ARCHITECTURE & REPRODUCIBILITY
+    # SECTION 7: TECHNICAL ARCHITECTURE
     # =========================================================================
-    story.append(Paragraph("7. Technical Architecture & Implementation Details", h1_style))
-    story.append(Paragraph(
-        "All analytical models and data assets are structured for complete modularity and automated reproduction:",
-        body_style
-    ))
-    story.append(Paragraph("• <b>SQLite Database (`data/online_retail_analytics.db`):</b> Cleaned line items in `fact_transactions`, RFM scores in `dim_customers_rfm`, cohort tracking in `fact_cohort_activity`, and pre-aggregated analytical views.", bullet_style))
-    story.append(Paragraph("• <b>Automated Tableau ODBC Connector (`tableau/online_retail_analytics.tds`):</b> Pre-configured Data Source XML enabling instant live connection in Tableau Desktop with zero manual schema setup.", bullet_style))
-    story.append(Paragraph("• <b>Production SQL Scripts (`/sql/`):</b> Dedicated scripts for schema DDL (`01_schema_and_views.sql`), cohort queries (`02_cohort_analysis.sql`), and RFM scoring (`03_rfm_segmentation.sql`).", bullet_style))
+    story.append(Paragraph("7. Technical Architecture", h1_style))
+    bullet("<b>SQLite database</b> (<font face='Courier'>data/online_retail_analytics.db</font>, built by the ETL script): <font face='Courier'>fact_transactions</font>, <font face='Courier'>dim_customers_rfm</font>, <font face='Courier'>fact_cohort_activity</font> and analytical views.")
+    bullet("<b>SQL</b> (<font face='Courier'>sql/</font>): schema and views, cohort retention query, RFM scoring with <font face='Courier'>NTILE(5)</font>.")
+    bullet("<b>Power BI</b> (<font face='Courier'>powerbi/</font>): star-schema tables, DAX measures, theme and build guide for a three-page dashboard.")
+    bullet("<b>Tableau</b> (<font face='Courier'>tableau/online_retail_analytics.tds</font>): data source for a live SQLite connection via ODBC.")
+    bullet("<b>Report figures</b> are computed in <font face='Courier'>src/report_metrics.py</font>, so the README, this report and the slide deck stay in sync.")
+    story.append(Spacer(1, 8))
+
+    story.append(Paragraph("Notes and limitations", h2_style))
+    bullet(f"The December 2009 cohort includes customers who bought before the data starts, which inflates its retention ({pct(cm1.iloc[0])} in month 1).")
+    bullet("Customer-weighted retention divides all returning customers by all cohort customers that reached that month, so large cohorts weigh more.")
+    bullet("Recommendations are hypotheses to test; the data does not include marketing spend, so CAC impact cannot be measured here.")
 
     doc.build(story, canvasmaker=NumberedCanvas)
     print(f"Comprehensive Multi-Page PDF Report generated successfully: {pdf_path}")

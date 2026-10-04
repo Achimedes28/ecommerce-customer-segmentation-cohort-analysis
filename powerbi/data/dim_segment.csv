@@ -1,0 +1,8 @@
+segment,segment_order,segment_group,recommended_action
+Champions,1,Core,"VIP perks and early access, no blanket discounts"
+Loyal Customers,2,Core,Loyalty tiers and cross-sell recommendations
+Potential Loyalists,3,Grow,Nudge toward 3rd and 5th order milestones
+New / Recent Customers,4,Grow,14-day post-purchase onboarding flow
+At Risk,5,Win back,Re-engagement trigger at 60 days without an order
+Hibernating,6,Dormant,Low-cost seasonal reactivation only
+Lost,7,Dormant,Suppress from paid campaigns
