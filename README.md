@@ -24,7 +24,7 @@ Acquisition costs are rising while marketing still relies on blanket discounts. 
 | Month-1 retention (customer-weighted) | 23.1% |
 | Champions + Loyal Customers | 43.1% of customers, 84.7% of revenue |
 
-1. **The first month is the cliff.** Only 23.1% of new customers buy again in the month after their first order. Retention then holds at roughly 19–25% through month 12, so the biggest lever is the second purchase.
+1. **The first month is the cliff.** Only 23.1% of new customers buy again in the month after their first order. Retention then holds at roughly 19–25% through month 12, so the biggest lever is the second purchase. Holiday cohorts retain worst (Nov 2010: 17.5%, Dec 2010: 9.2% in month 1).
 2. **Revenue is highly concentrated.** Champions are 22.5% of customers but 69.0% of revenue. Hibernating and Lost customers are 28.3% of the base and only 3.3% of revenue.
 3. **£1.71M sits in At Risk customers** (683 customers, last order about a year ago on average) – the clearest win-back target.
 4. **Strong Q4 seasonality.** Monthly revenue peaks in November in both years at around £1.2M.
@@ -78,7 +78,7 @@ Customers are scored 1–5 on recency, frequency and monetary value (quintiles) 
 ├── presentations/     executive slide deck (.pptx)
 ├── reports/           executive report (.pdf)
 ├── sql/               schema, cohort and RFM queries (SQLite)
-├── src/               ETL, charts, Power BI model and preview scripts
+├── src/               ETL, metrics, charts, Power BI, report and deck scripts
 ├── tableau/           Tableau data source
 └── visualizations/    charts used in this README
 ```
@@ -97,6 +97,12 @@ python src/generate_minimalist_visualizations.py
 # 3. Power BI tables and page previews
 python src/build_powerbi_model.py
 python src/render_dashboard_preview.py
+
+# 4. Executive report (PDF) and slide deck (PPTX)
+python src/build_detailed_report.py
+python src/build_professional_slides.py
 ```
+
+All figures in this README, the report and the deck come from `src/report_metrics.py` (`python src/report_metrics.py` prints them).
 
 Dataset: [Online Retail II, UCI Machine Learning Repository](https://archive.ics.uci.edu/dataset/502/online+retail+ii). The raw file and the SQLite database are not committed because of their size; `data/cleaned_transactions_sample100k.csv` holds the first 100k cleaned lines for inspection.

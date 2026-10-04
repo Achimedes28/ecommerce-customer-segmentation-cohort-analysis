@@ -5,11 +5,14 @@ Style: Modern Minimalist Light (McKinsey / Stripe / Tech Analytics Style)
 """
 
 import os
+import pandas as pd
 from pptx import Presentation
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
 from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 from pptx.enum.shapes import MSO_SHAPE
+
+from report_metrics import load_metrics, money, money_m, pct
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PRES_DIR = os.path.join(BASE_DIR, "presentations")
@@ -74,6 +77,12 @@ def generate_slides():
     prs.slide_height = Inches(7.5)
     blank_layout = prs.slide_layouts[6]
 
+    m = load_metrics()
+    seg = m["seg"]
+    champ, loyal, potential, risk = (seg.loc[k] for k in ("Champions", "Loyal Customers", "Potential Loyalists", "At Risk"))
+    cm1 = m["cohort_m1"]
+    nov10, dec10 = cm1[pd.Timestamp("2010-11-01")], cm1[pd.Timestamp("2010-12-01")]
+
     def add_bg(slide):
         bg = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, Inches(13.333), Inches(7.5))
         set_shape_style(bg, fill_color=C_CANVAS, line_color=None)
@@ -121,10 +130,10 @@ def generate_slides():
 
     # 4 Bottom Stat Chips
     stat_chips = [
-        ("TOTAL REVENUE", "£17.74M", C_BLUE),
-        ("CLEANED TRANSACTIONS", "805.5K", C_EMERALD),
-        ("UNIQUE CUSTOMERS", "5,878", C_PRIMARY),
-        ("MONTH-1 CHURN DROP", "-74.2%", C_ROSE)
+        ("TOTAL REVENUE", money_m(m["revenue"]), C_BLUE),
+        ("CLEANED TRANSACTIONS", f"{m['clean_rows'] / 1e3:.1f}K", C_EMERALD),
+        ("UNIQUE CUSTOMERS", f"{m['customers']:,}", C_PRIMARY),
+        ("NOT BACK IN MONTH 1", pct(m["m1_churn"]), C_ROSE)
     ]
     chip_w = Inches(2.55)
     chip_h = Inches(1.15)
@@ -160,10 +169,10 @@ def generate_slides():
 
     # 4 Top KPI Cards
     top_metrics = [
-        ("TOTAL GROSS REVENUE", "£17.74M", "Net valid transactions (24 Months)", C_BLUE),
-        ("REGISTERED BUYERS", "5,878", "Tracked unique customer IDs", C_PRIMARY),
-        ("MONTH-1 RETENTION", "25.8%", "Steepest drop-off point in lifecycle", C_ROSE),
-        ("TOP VALUE CONCENTRATION", "62.4%", "Driven by top 28.1% of customers", C_EMERALD)
+        ("TOTAL REVENUE", money_m(m["revenue"]), f"{m['orders']:,} orders, Dec 2009 - Dec 2011", C_BLUE),
+        ("REGISTERED CUSTOMERS", f"{m['customers']:,}", f"{m['countries']} countries", C_PRIMARY),
+        ("MONTH-1 RETENTION", pct(m["m1"]), "Steepest drop-off in the lifecycle", C_ROSE),
+        ("CHAMPIONS + LOYAL REVENUE", pct(m["core_pct_revenue"]), f"From {pct(m['core_pct_customers'])} of customers", C_EMERALD)
     ]
     kw = Inches(2.78)
     kh = Inches(1.2)
@@ -220,8 +229,8 @@ def generate_slides():
     diag_points = [
         ("Surging Acquisition Costs (+25% CAC):", "Rising ad channel costs mean acquiring one-off buyers severely damages long-term profitability."),
         ("Inefficient Blanket Discounting:", "Mass promo discounts eroded profit margins without driving repeat loyalty or sustainable habit formation."),
-        ("The 'Month-1 Cliff' (74.2% Churn):", "Almost three-quarters of buyers lapse immediately after order #1 due to lack of automated onboarding."),
-        ("Silent VIP Value Decay:", "High-value buyers lapsed into 'At Risk' unnoticed without automated behavioral retention triggers.")
+        (f"The Month-1 Cliff ({pct(m['m1_churn'])} not back):", "Roughly three in four new customers do not buy again in the month after their first order."),
+        ("Silent VIP Value Decay:", f"{int(risk.customers):,} once-valuable customers ({money_m(risk.revenue)} historical revenue) have drifted into At Risk.")
     ]
     for dt, dd in diag_points:
         pt = lptf.add_paragraph()
@@ -231,11 +240,11 @@ def generate_slides():
         pt.font.color.rgb = C_PRIMARY
         pt.space_before = Pt(6)
         
-        pd = lptf.add_paragraph()
-        pd.text = f"  {dd}"
-        pd.font.size = Pt(8.8)
-        pd.font.color.rgb = C_BODY
-        pd.space_before = Pt(1)
+        pdesc = lptf.add_paragraph()
+        pdesc.text = f"  {dd}"
+        pdesc.font.size = Pt(8.8)
+        pdesc.font.color.rgb = C_BODY
+        pdesc.space_before = Pt(1)
 
     # Right Panel: Strategic Objectives
     rp = s2.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(6.81), panel_y, panel_w, panel_h)
@@ -256,8 +265,8 @@ def generate_slides():
     obj_points = [
         ("Reallocate 20% Budget to Retention:", "Shift paid media budget from low-intent cold ads to high-ROI automated post-purchase flows."),
         ("Eliminate Blanket Promo Discounts:", "Preserve margin by replacing general discounts with VIP perks for Champions and win-back offers for At-Risk."),
-        ("Bridge Month-1 Gap (Days 7-21):", "Target new buyers with personalized category recommendations within 14 days to lift repeat rates above 35%."),
-        ("Automate Live Tableau Telemetry:", "Empower growth teams with live weekly cohort retention and RFM migration dashboards.")
+        ("Bridge the Month-1 Gap:", "Send new buyers personalised category recommendations within 14 days of their first order."),
+        ("Track Retention in Power BI:", "Give growth teams a dashboard for month-1 retention, cohort curves and segment shifts.")
     ]
     for ot, od in obj_points:
         pt = rptf.add_paragraph()
@@ -267,11 +276,11 @@ def generate_slides():
         pt.font.color.rgb = C_PRIMARY
         pt.space_before = Pt(6)
         
-        pd = rptf.add_paragraph()
-        pd.text = f"  {od}"
-        pd.font.size = Pt(8.8)
-        pd.font.color.rgb = C_BODY
-        pd.space_before = Pt(1)
+        pdesc = rptf.add_paragraph()
+        pdesc.text = f"  {od}"
+        pdesc.font.size = Pt(8.8)
+        pdesc.font.color.rgb = C_BODY
+        pdesc.space_before = Pt(1)
 
     # =========================================================================
     # SLIDE 3: COHORT RETENTION ANALYSIS (Snug Fit Chart + 3 Side Cards)
@@ -298,14 +307,14 @@ def generate_slides():
     side_x = Inches(8.5)
 
     c_cards = [
-        ("THE MONTH-1 CLIFF (-74.2% DROP)",
-         "Average retention plummets from 100% to 25.8% within 30 days. Over 7 out of 10 newly acquired customers never make a repeat purchase without intervention.",
+        (f"THE MONTH-1 CLIFF ({pct(m['m1'])} RETAINED)",
+         f"Only {pct(m['m1'])} of new customers buy again in the month after their first order (customer-weighted across all cohorts).",
          C_ROSE),
-        ("LONG-TERM RETENTION STABILIZATION",
-         "Cohorts that survive past Month 3 form a resilient, highly profitable core, sustaining 20-25% repeat activity through Month 12+.",
+        ("FLAT AFTER THE CLIFF",
+         f"Retention then holds between {pct(m['retention_min_m1_m12'])} and {pct(m['retention_max_m1_m12'])} from month 1 to month 12, so the second purchase is the main lever.",
          C_BLUE),
-        ("CRITICAL INTERVENTION WINDOW",
-         "Post-purchase onboarding triggers must deploy during Days 7-21 while product satisfaction is high, before buyer momentum completely fades.",
+        ("HOLIDAY COHORTS RETAIN WORST",
+         f"Customers first acquired in Nov 2010 ({pct(nov10)}) and Dec 2010 ({pct(dec10)}) came back far less in month 1. Follow up within 30 days.",
          C_AMBER)
     ]
     for i, (title, desc, col) in enumerate(c_cards):
@@ -346,14 +355,14 @@ def generate_slides():
         s4.shapes.add_picture(img_rfm, Inches(0.95), Inches(1.5), width=Inches(7.2))
 
     rfm_cards = [
-        ("CHAMPIONS (41.1% REVENUE | 14.8% USERS)",
-         "868 VIPs generate £7.28M with 19.8 avg orders (£8.39k spend). Action: Provide dedicated concierge, product co-creation, and zero margin discounts.",
+        (f"CHAMPIONS ({pct(champ.pct_revenue)} REVENUE | {pct(champ.pct_customers)} CUSTOMERS)",
+         f"{int(champ.customers):,} customers generate {money_m(champ.revenue)} with {champ.orders:.1f} orders on average ({money(champ.spend)} spend). Action: VIP perks and early access, no discounts.",
          C_EMERALD),
-        ("LOYAL & POTENTIAL (29.5% REVENUE)",
-         "1,523 consistent buyers contributing £5.23M. Action: Milestone rewards, threshold spend bonuses, and cross-category discovery recommendations.",
+        (f"LOYAL & POTENTIAL ({pct(loyal.pct_revenue + potential.pct_revenue)} REVENUE)",
+         f"{int(loyal.customers + potential.customers):,} customers contributing {money_m(loyal.revenue + potential.revenue)}. Action: loyalty milestones and cross-category recommendations.",
          C_BLUE),
-        ("AT RISK & CAN'T LOSE (15.1% REVENUE)",
-         "945 high-spend customers inactive >200 days (£2.68M revenue at stake). Action: Time-sensitive automated win-back emails & reactivation incentives.",
+        (f"AT RISK ({pct(risk.pct_revenue)} REVENUE)",
+         f"{int(risk.customers):,} customers averaging {money(risk.spend)} spend, last order ~{risk.recency:.0f} days ago ({money_m(risk.revenue)} historical revenue). Action: targeted win-back offers.",
          C_AMBER)
     ]
     for i, (title, desc, col) in enumerate(rfm_cards):
@@ -394,14 +403,14 @@ def generate_slides():
         s5.shapes.add_picture(img_growth, Inches(0.95), Inches(1.5), width=Inches(7.2))
 
     gro_cards = [
-        ("Q4 HOLIDAY REVENUE SURGE (>£1.5M/MO)",
-         "Consistent seasonal peaks in October-November where monthly revenue spikes +140% above Q1 levels, driven by seasonal gifting volume.",
+        ("Q4 PEAK (~£1.2M / MONTH)",
+         "Revenue climbs from September and peaks in November in both years, roughly twice the Q1 monthly level.",
          C_BLUE),
-        ("POST-HOLIDAY CHURN MANAGEMENT",
-         "The huge influx of November buyers requires structured January re-engagement sequences to prevent them from becoming dormant Hibernators.",
+        ("POST-HOLIDAY RE-ENGAGEMENT",
+         "Holiday first-time buyers retain worst, so a January re-engagement flow keeps them from becoming Hibernating.",
          C_AMBER),
-        ("BASKET MONETIZATION & AOV EXPANSION",
-         "Average Order Value (AOV) reaches maximum levels during multi-item holiday purchasing. Automated bundle recommendations maximize transaction value.",
+        ("DECEMBER 2011 IS PARTIAL",
+         f"The data ends on 9 Dec 2011, so the final drop is a cut-off, not a decline. Average order value over the period: {money(m['aov'])}.",
          C_EMERALD)
     ]
     for i, (title, desc, col) in enumerate(gro_cards):
@@ -439,7 +448,7 @@ def generate_slides():
             ("Reallocate 20% Ad Budget", "Shift media spend from low-intent cold search/social to automated lifecycle retention flows."),
             ("Eliminate Public Discounting", "Stop blanket promo codes; protect product prestige and gross profit margins."),
             ("Tiered Promo Strategy", "Provide exclusive VIP previews to Champions; reserve financial incentives strictly for At-Risk win-back."),
-            ("Target CAC Reduction (-15%)", "Lower blended acquisition costs by boosting repeat purchase contribution.")
+            ("Measure with Holdout Tests", "Run each change against a control group to measure its real effect on repeat revenue and CAC.")
         ]),
         ("CRM & RETENTION LEAD", C_AMBER, [
             ("14-Day Post-Purchase Trigger", "Deploy automated onboarding emails offering cross-category complements based on 1st order SKU."),
@@ -450,7 +459,7 @@ def generate_slides():
         ("PRODUCT & GROWTH MANAGER", C_EMERALD, [
             ("Tiered Loyalty Program", "Implement Bronze, Silver, Gold, Platinum tiers with tangible milestone rewards on 3rd & 5th orders."),
             ("1-Click Frictionless Reorder", "Add instant reorder buttons on order history pages for high-frequency consumable items."),
-            ("Tableau Retention Tracking", "Connect Tableau dashboards via automated TDS / ODBC connection for live weekly cohort monitoring."),
+            ("Power BI Retention Dashboard", "Monitor month-1 retention, cohort curves and segment shifts in the three-page Power BI report."),
             ("Cross-Sell Recommendation Engine", "Deploy intelligent recommendation widgets during checkout based on product affinity rules.")
         ])
     ]
@@ -496,23 +505,23 @@ def generate_slides():
 
     tech_steps = [
         ("1. DATA EXTRACTION & CLEANING", C_BLUE, [
-            "Processed 1.06M raw Excel transactions across 2 historical sheets.",
-            "Filtered cancellations ('C'), negative quantities, and zero unit prices.",
-            "Resulted in 805,549 verified line items with £17.74M revenue."
+            f"Processed {m['raw_rows'] / 1e6:.2f}M raw Excel lines across 2 yearly sheets.",
+            "Removed cancellations ('C'), returns, zero prices and guest checkouts.",
+            f"Kept {m['clean_rows']:,} line items, {money_m(m['revenue'])} revenue."
         ]),
         ("2. SQL & ANALYTICAL MODELING", C_PRIMARY, [
             "Built SQLite schema (`online_retail_analytics.db`).",
             "Engineered RFM scores (`NTILE(5)`) and Cohort Index offsets.",
             "Created indexed views: `v_rfm_summary`, `v_monthly_sales_trend`."
         ]),
-        ("3. TABLEAU ODBC AUTOMATION", C_EMERALD, [
-            "Configured macOS ODBC DSN (`Portfolio_DB`).",
-            "Generated Tableau Data Source (`.tds`) XML for 1-click live connection.",
-            "Instantly launched Tableau Desktop for visual exploration."
+        ("3. POWER BI & TABLEAU", C_EMERALD, [
+            "Power BI star schema, DAX measures and theme in `/powerbi/`.",
+            "Three-page dashboard: Overview, Cohort Retention, RFM Segments.",
+            "Tableau data source (`.tds`) for a live SQLite connection via ODBC."
         ]),
         ("4. REPRODUCIBLE ARTIFACTS", C_AMBER, [
             "Production SQL scripts in `/sql/` directory.",
-            "Comprehensive Case Study & KPI Scorecard in `README.md`.",
+            "All figures computed in `src/report_metrics.py`.",
             "High-resolution 300 DPI visualizations & detailed PDF briefing."
         ])
     ]
