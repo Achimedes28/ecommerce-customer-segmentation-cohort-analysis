@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_DIR = os.path.join(BASE_DIR, "data")
+DATA_DIR = os.path.join(BASE_DIR, "Data")
 METRICS_DIR = os.path.join(BASE_DIR, "metrics")
 VIZ_DIR = os.path.join(BASE_DIR, "visualizations")
 TABLEAU_DIR = os.path.join(BASE_DIR, "tableau")
@@ -96,7 +96,7 @@ def run_pipeline():
         elif r <= 2 and fm <= 2:
             return 'Hibernating'
         else:
-            return 'Lost / Others'
+            return 'Lost'
 
     rfm['segment'] = rfm.apply(segment_customer, axis=1)
     rfm.to_csv(os.path.join(DATA_DIR, 'customers_rfm_segmented.csv'), index=False)

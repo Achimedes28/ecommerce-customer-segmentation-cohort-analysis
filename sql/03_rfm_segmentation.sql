@@ -43,8 +43,7 @@ SELECT
         WHEN r_score >= 4 AND (f_score + m_score)/2.0 <= 2 THEN 'New / Recent Customers'
         WHEN r_score >= 3 AND (f_score + m_score)/2.0 <= 3 THEN 'Potential Loyalists'
         WHEN r_score <= 2 AND (f_score + m_score)/2.0 >= 3 THEN 'At Risk'
-        WHEN r_score = 1 AND (f_score + m_score)/2.0 >= 4 THEN 'Cannot Lose Them'
         WHEN r_score <= 2 AND (f_score + m_score)/2.0 <= 2 THEN 'Hibernating'
-        ELSE 'Lost / Others'
+        ELSE 'Lost'
     END AS segment
 FROM rfm_scoring;

@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='utf-8' ?>
 <datasource formatted-name='online_retail_analytics' inline='true' version='18.1' xmlns:user='http://www.tableausoftware.com/xml/user'>
-  <connection class='genericodbc' dbname='/Users/novaldiramadhanwaluyo/Desktop/Certificate and portfolio/Portfolio/Portfolio Data Analyst/E-Commerce Customer Segmentation &amp; Cohort Analysis/data/online_retail_analytics.db' driver='SQLite3' odbc-connect-string-extras='DSN=Portfolio_DB' port='' schema='' server='' username='' authentication='no'>
+  <connection class='genericodbc' dbname='Data/online_retail_analytics.db' driver='SQLite3' odbc-connect-string-extras='DSN=Portfolio_DB' port='' schema='' server='' username='' authentication='no'>
     <relation name='fact_transactions' table='[fact_transactions]' type='table' />
   </connection>
 </datasource>

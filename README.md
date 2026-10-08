@@ -30,7 +30,7 @@ The CAC increase comes from the brief, not from the data. The dataset itself has
 
 ![Cohort retention heatmap](visualizations/01_cohort_retention_heatmap.png)
 
-Across 25 monthly cohorts, on average only **21%** of customers bought again in the month after their first order. Retention then stays roughly flat around 20% for the next few months and settles at about 15 to 18% by month 6 to 12.
+Across the 24 monthly cohorts that have a month-1 value, on average only **21%** of customers bought again in the month after their first order. Retention then stays roughly flat around 20% for the next few months and settles at about 15 to 18% by month 6 to 12.
 
 So the biggest loss happens right after the first order. Customers who make it past the first few months tend to keep buying.
 
@@ -40,7 +40,7 @@ One exception: the December 2009 cohort retains much better (35% in month 1, 38%
 
 ![RFM revenue vs customer share](visualizations/02_rfm_revenue_vs_customers.png)
 
-Customers were scored 1 to 5 on recency, frequency and monetary value using quintiles (`NTILE(5)`), with 10 December 2011 as the reference date, and then grouped into segments.
+Customers were scored 1 to 5 on recency, frequency and monetary value using quintiles (pandas `qcut` in `etl_pipeline.py`; `sql/03_rfm_segmentation.sql` is the equivalent SQL version with `NTILE(5)`), with 10 December 2011 as the reference date, and then grouped into segments.
 
 | Segment | Customers | % of customers | Revenue | % of revenue | Avg days since last order | Avg orders | Avg spend |
 |---|---:|---:|---:|---:|---:|---:|---:|
@@ -83,12 +83,15 @@ These are directional, since the data does not include cost or campaign results.
 ```
 ├── Data/
 │   ├── customers_rfm_segmented.csv            one row per customer with RFM scores and segment
-│   └── cleaned_transactions_sample100k.csv    100k-row sample of the cleaned transactions
+│   └── cleaned_transactions_sample100k.csv    first 100,000 cleaned rows (Dec 2009 to Mar 2010), a preview only
 ├── sql/
 │   ├── 01_schema_and_views.sql                tables, indexes and summary views
 │   ├── 02_cohort_analysis.sql                 cohort retention query
 │   └── 03_rfm_segmentation.sql                RFM scoring with NTILE and segment rules
-├── src/                                       Python scripts: cleaning, charts, report and slides
+├── src/
+│   ├── etl_pipeline.py                        cleaning, cohorts, RFM scoring, SQLite database
+│   ├── generate_minimalist_visualizations.py  charts in visualizations/
+│   └── build_report_and_deck.py               PDF report and PPTX deck, all figures read from metrics/
 ├── metrics/                                   cohort retention rates, cohort sizes, RFM summary
 ├── visualizations/                            charts used in this README
 ├── tableau/online_retail_analytics.tds        Tableau data source for the SQLite database
@@ -97,7 +100,7 @@ These are directional, since the data does not include cost or campaign results.
 └── Project Brief - Customer Lifetime Value & Retention Optimization.pdf
 ```
 
-The full cleaned dataset and the SQLite database are not included because of file size. To rebuild them, download `online_retail_II.xlsx` from UCI, place it in `Data/`, and run `python src/etl_pipeline.py`. The Tableau data source expects an ODBC DSN named `Portfolio_DB` pointing to that database.
+The full cleaned dataset and the SQLite database are not included because of file size. To rebuild them, download `online_retail_II.xlsx` from UCI, place it in `Data/`, and run `python src/etl_pipeline.py`, then `python src/generate_minimalist_visualizations.py` and `python src/build_report_and_deck.py`. The Tableau data source expects an ODBC DSN named `Portfolio_DB` pointing to that database.
 
 ## Next steps
 

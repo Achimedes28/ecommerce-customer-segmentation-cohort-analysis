@@ -12,10 +12,10 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-BASE_DIR = "/Users/novaldiramadhanwaluyo/Desktop/Certificate and portfolio/Portfolio/Portfolio Data Analyst/E-Commerce Customer Segmentation & Cohort Analysis"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 VIZ_DIR = os.path.join(BASE_DIR, "visualizations")
 METRICS_DIR = os.path.join(BASE_DIR, "metrics")
-DATA_DIR = os.path.join(BASE_DIR, "data")
+DATA_DIR = os.path.join(BASE_DIR, "Data")
 os.makedirs(VIZ_DIR, exist_ok=True)
 
 # -----------------------------------------------------------------------------
@@ -58,44 +58,36 @@ plt.savefig(os.path.join(VIZ_DIR, '01_cohort_retention_heatmap.png'), dpi=300, f
 plt.close()
 
 # 2. RFM REVENUE VS CUSTOMERS
+# Both series are percentages, so they share one axis; the limit follows the data
+# (Champions alone hold 69% of revenue, which a fixed 0-50 axis would clip).
 rfm_summary = pd.read_csv(os.path.join(METRICS_DIR, 'rfm_segment_summary.csv'))
 
 fig, ax1 = plt.subplots(figsize=(10, 5.2), dpi=300, facecolor='#FFFFFF')
 x = np.arange(len(rfm_summary))
 width = 0.4
-
-# Bars for Revenue
-bars = ax1.bar(x - width/2, rfm_summary['pct_revenue'], width=width, label='% Total Revenue', color='#2563EB', edgecolor='none', alpha=0.9, zorder=3)
-ax1.set_ylabel('% Total Revenue Contribution', fontsize=9, weight='bold', color='#2563EB', labelpad=8)
+bars = ax1.bar(x - width/2, rfm_summary['pct_revenue'], width=width, label='% of revenue', color='#2563EB', edgecolor='none', zorder=3)
+bars2 = ax1.bar(x + width/2, rfm_summary['pct_customers'], width=width, label='% of customers', color='#94A3B8', edgecolor='none', zorder=3)
+ax1.set_ylabel('Share (%)', fontsize=9, weight='bold', color='#334155', labelpad=8)
 ax1.set_xticks(x)
 ax1.set_xticklabels(rfm_summary['segment'], rotation=25, ha='right', fontsize=8.5, weight='bold', color='#0F172A')
-ax1.tick_params(axis='y', labelsize=8, colors='#2563EB')
-ax1.set_ylim(0, 50)
+ax1.tick_params(axis='y', labelsize=8, colors='#334155')
+ax1.set_ylim(0, max(rfm_summary['pct_revenue'].max(), rfm_summary['pct_customers'].max()) * 1.12)
 ax1.grid(axis='y', zorder=0, alpha=0.6)
-
-# Direct data labels on bars
-for bar in bars:
-    h = bar.get_height()
-    ax1.text(bar.get_x() + bar.get_width()/2., h + 0.8, f'{h:.1f}%', ha='center', va='bottom', fontsize=7.5, weight='bold', color='#1E40AF')
-
-# Bars for Customer Share
-ax2 = ax1.twinx()
-bars2 = ax2.bar(x + width/2, rfm_summary['pct_customers'], width=width, label='% Customer Base', color='#94A3B8', edgecolor='none', alpha=0.85, zorder=3)
-ax2.set_ylabel('% Total Customer Base', fontsize=9, weight='bold', color='#64748B', labelpad=8)
-ax2.tick_params(axis='y', labelsize=8, colors='#64748B')
-ax2.set_ylim(0, 50)
-ax2.grid(False)
-
-for bar in bars2:
-    h = bar.get_height()
-    ax2.text(bar.get_x() + bar.get_width()/2., h + 0.8, f'{h:.1f}%', ha='center', va='bottom', fontsize=7.5, weight='bold', color='#475569')
-
-plt.title('Customer Segments: Revenue Contribution vs Customer Share (Pareto Dynamic)', fontsize=12, weight='bold', color='#0F172A', pad=12)
+for bs, col in ((bars, '#1E40AF'), (bars2, '#475569')):
+    for bar in bs:
+        h = bar.get_height()
+        ax1.text(bar.get_x() + bar.get_width()/2., h + 0.8, f'{h:.1f}%', ha='center', va='bottom', fontsize=7.5, weight='bold', color=col)
+ax1.legend(frameon=False, fontsize=8.5, loc='upper right')
+plt.title('Customer Segments: Share of Revenue vs Share of Customers', fontsize=12, weight='bold', color='#0F172A', pad=12)
 fig.tight_layout()
 plt.savefig(os.path.join(VIZ_DIR, '02_rfm_revenue_vs_customers.png'), dpi=300, facecolor='#FFFFFF', bbox_inches='tight')
 plt.close()
 
 # 3. MONTHLY REVENUE & ORDER GROWTH
+# Needs the full SQLite database built by src/etl_pipeline.py (not committed because of its size).
+if not os.path.exists(os.path.join(DATA_DIR, 'online_retail_analytics.db')):
+    print('Skipping monthly revenue chart: run src/etl_pipeline.py first to build the database.')
+    raise SystemExit(0)
 df_clean = pd.read_sql('SELECT invoice_date_str, total_sales, invoice_no FROM fact_transactions', 
                        sqlite3_conn := __import__('sqlite3').connect(os.path.join(DATA_DIR, 'online_retail_analytics.db')))
 sqlite3_conn.close()
