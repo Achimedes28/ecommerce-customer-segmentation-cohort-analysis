@@ -1,6 +1,8 @@
 # E-Commerce Customer Segmentation and Cohort Retention
 
-Analysis of two years of transactions from a UK-based online retailer (UCI Online Retail II dataset). The goal was to answer two questions:
+Analysis of two years of transactions from a UK-based online retailer (UCI Online Retail II dataset).
+
+The project follows a case brief ([`Project Brief - Customer Lifetime Value & Retention Optimization.pdf`](Project%20Brief%20-%20Customer%20Lifetime%20Value%20%26%20Retention%20Optimization.pdf)). In the scenario, the retailer's customer acquisition cost has risen 25% over 12 months while marketing still relies on untargeted mass promotions. The task is to answer two questions:
 
 1. How many new customers come back after their first purchase, and when do most of them stop buying?
 2. Which customer groups generate most of the revenue, and which groups are worth a retention or win-back effort?
@@ -20,7 +22,7 @@ Cleaning steps:
 - Removed cancelled invoices (invoice numbers starting with "C") and rows with zero or negative quantity or price
 - Calculated `total_sales = quantity * unit_price`
 
-The dataset has no marketing spend, acquisition channel or margin data, so this analysis looks at customer behaviour and revenue only, not at campaign cost or profit.
+The CAC increase comes from the brief, not from the data. The dataset itself has no marketing spend, acquisition channel or margin data, so this analysis looks at customer behaviour and revenue only, not at campaign cost or profit.
 
 ## Findings
 
@@ -79,23 +81,23 @@ These are directional, since the data does not include cost or campaign results.
 ## Repository
 
 ```
-├── data/
-│   ├── online_retail_analytics.db       SQLite database with tables and views
-│   ├── customers_rfm_segmented.csv      one row per customer with RFM scores and segment
-│   └── cleaned_transactions_sample100k.csv
+├── Data/
+│   ├── customers_rfm_segmented.csv            one row per customer with RFM scores and segment
+│   └── cleaned_transactions_sample100k.csv    100k-row sample of the cleaned transactions
 ├── sql/
-│   ├── 01_schema_and_views.sql          tables, indexes and summary views
-│   ├── 02_cohort_analysis.sql           cohort retention query
-│   └── 03_rfm_segmentation.sql          RFM scoring with NTILE and segment rules
-├── tableau/
-│   └── online_retail_analytics.tds      Tableau data source pointing to the SQLite DB
-├── visualizations/                      charts used in this README
-└── metrics/
-    ├── cohort_retention_rates.csv
-    └── rfm_segment_summary.csv
+│   ├── 01_schema_and_views.sql                tables, indexes and summary views
+│   ├── 02_cohort_analysis.sql                 cohort retention query
+│   └── 03_rfm_segmentation.sql                RFM scoring with NTILE and segment rules
+├── src/                                       Python scripts: cleaning, charts, report and slides
+├── metrics/                                   cohort retention rates, cohort sizes, RFM summary
+├── visualizations/                            charts used in this README
+├── tableau/online_retail_analytics.tds        Tableau data source for the SQLite database
+├── presentations/                             executive presentation (PPTX)
+├── reports/                                   executive report (PDF)
+└── Project Brief - Customer Lifetime Value & Retention Optimization.pdf
 ```
 
-The Tableau data source connects to the SQLite database through an ODBC DSN named `Portfolio_DB`. You need to create that DSN on your own machine before opening it.
+The full cleaned dataset and the SQLite database are not included because of file size. To rebuild them, download `online_retail_II.xlsx` from UCI, place it in `Data/`, and run `python src/etl_pipeline.py`. The Tableau data source expects an ODBC DSN named `Portfolio_DB` pointing to that database.
 
 ## Next steps
 
